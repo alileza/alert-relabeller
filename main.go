@@ -21,7 +21,7 @@ func main() {
 
 	var config Config
 	if err := config.Load(configPath); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 	config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
 
