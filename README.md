@@ -16,11 +16,6 @@ rules:
       team: dba
 ```
 
-config_last_updated_at: "2023-09-20T14:30:00Z"
-alertmanager_urls: List of Alertmanager endpoints where modified alerts will be sent.
-rules: Custom rules for relabelling alerts based on label conditions.
-config_last_updated_at: Timestamp indicating when the configuration was last updated.
-
 # Usage
 
 You can start Alertmanager Relabeller by running the following command, specifying the path to your configuration file (if different from the default config.yml):
@@ -38,6 +33,10 @@ rules:
       team: dba
       component: aws
 ```
+
+
+**alertmanager_urls:** List of Alertmanager endpoints where modified alerts will be sent.
+**rules**: Custom rules for relabelling alerts based on label conditions.
 
 ## Example rule:
 
