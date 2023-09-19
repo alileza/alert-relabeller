@@ -43,4 +43,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/alileza/alert-relabeller:${{ steps.tagname.outputs.tagname }}
-```
