@@ -1,0 +1,11 @@
+alertmanager_urls:
+  - http://localhost:9093/api/v1/alerts
+rules:
+  - if: name == 'argocd'
+    then: 
+      atom: developer-experience
+      element: platform
+  - if: name == 'argocd'
+    then: 
+      atom: developer-experience
+      element: platform
