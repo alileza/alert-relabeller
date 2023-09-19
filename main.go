@@ -4,65 +4,86 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/model"
-	"gopkg.in/yaml.v2"
+)
+
+var (
+	requestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total number of HTTP requests by status code and method.",
+	}, []string{"code", "method", "path"})
+
+	relabelingMatchesTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "relabelling_matches_total",
+		Help: "Total number of requests that matched relabelling rules.",
+	})
 )
 
 func main() {
+	var alertmanagerURL string
 	var configPath string
 	var port string
 	flag.StringVar(&configPath, "config", "config.yml", "destination of config file")
 	flag.StringVar(&port, "port", ":9999", "port to listen on")
+	flag.StringVar(&alertmanagerURL, "alertmanager-url", "http://localhost:9093", "alertmanager url")
 	flag.Parse()
+
+	uam, err := url.Parse(alertmanagerURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	amproxy := httputil.NewSingleHostReverseProxy(uam)
 
 	var config Config
 	if err := config.Load(configPath); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 	config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
 
-	client := &http.Client{}
-	log.Printf("listening on %s", port)
-	err := http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/config" {
-			if err := yaml.NewEncoder(w).Encode(config); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+	log.Printf("alert-relabelling running on %s", port)
+	err = http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/config", http.StatusFound)
 			return
 		}
 
-		if r.Method == http.MethodPost && r.URL.Path == "/config" {
-			switch r.Header.Get("Content-Type") {
-			case "application/json":
-				if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
-					log.Printf("[ERR] failed to reload config: %s", err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
-			case "application/yaml":
-				if err := yaml.NewDecoder(r.Body).Decode(&config); err != nil {
-					log.Printf("[ERR] failed to reload config: %s", err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
-			default:
-				http.Error(w, "invalid content type", http.StatusBadRequest)
-				return
-			}
-			log.Printf("Successfully reload config")
+		if r.URL.Path == "/metrics" {
+			promhttp.Handler().ServeHTTP(w, r)
 			return
 		}
 
+		if r.URL.Path == "/favicon.ico" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		if r.URL.Path == "/config" {
+			config.Handler(w, r)
+			return
+		}
+
+		if r.URL.Path == "/-/ready" || r.URL.Path == "/-/healthy" {
+			amproxy.ServeHTTP(w, r)
+			return
+		}
+
+		// alerts handling
 		var incomingAlerts []model.Alert
 		if err := json.NewDecoder(r.Body).Decode(&incomingAlerts); err != nil {
 			log.Printf("[ERR] failed to decode incoming alerts: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			requestsTotal.WithLabelValues(toString(http.StatusInternalServerError), r.Method, r.URL.Path).Inc()
 			return
 		}
 
@@ -74,24 +95,14 @@ func main() {
 		if err != nil {
 			log.Printf("[ERR] failed to marshal incoming alerts: %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			requestsTotal.WithLabelValues(toString(http.StatusInternalServerError), r.Method, r.URL.Path).Inc()
 			return
 		}
 
-		var errs []error
-		for _, alertmanagerURL := range config.AlertmanagerURLs {
-			resp, err := client.Post(alertmanagerURL, "application/json", bytes.NewBuffer(payload))
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			resp.Body.Close()
-		}
-
-		if len(errs) > 0 {
-			log.Println(printErrs(errs))
-			http.Error(w, printErrs(errs), http.StatusInternalServerError)
-			return
-		}
+		r.Body = io.NopCloser(bytes.NewBuffer(payload))
+		r.ContentLength = int64(len(payload))
+		amproxy.ServeHTTP(w, r)
+		requestsTotal.WithLabelValues(toString(http.StatusOK), r.Method, r.URL.Path).Inc()
 	}))
 
 	if err != nil {
@@ -99,10 +110,6 @@ func main() {
 	}
 }
 
-func printErrs(errs []error) string {
-	var errStr string
-	for _, err := range errs {
-		errStr += err.Error()
-	}
-	return errStr
+func toString(i int) string {
+	return fmt.Sprintf("%d", i)
 }

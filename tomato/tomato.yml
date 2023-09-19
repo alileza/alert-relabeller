@@ -1,0 +1,13 @@
+---
+features_path:
+  - /features
+resources:
+  - name: httpcli
+    type: httpclient
+    options:
+      base_url: http://alert-relabeller:9999
+
+  - name: alertmanager
+    type: wiremock
+    options:
+      base_url: http://alertmanager:8080

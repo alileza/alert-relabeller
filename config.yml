@@ -1,11 +1,9 @@
-alertmanager_urls:
-  - http://localhost:9093/api/v1/alerts
 rules:
   - if: name == 'argocd'
     then: 
-      atom: developer-experience
-      element: platform
-  - if: name == 'argocd'
+      team: devops
+      department: platform
+  - if: job == 'rds-exporter'
     then: 
-      atom: developer-experience
-      element: platform
+      team: dba
+      component: aws
