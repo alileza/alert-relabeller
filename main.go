@@ -80,11 +80,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-func printErrs(errs []error) string {
-	var errStr string
-	for _, err := range errs {
-		errStr += err.Error()
-	}
-	return errStr
-}

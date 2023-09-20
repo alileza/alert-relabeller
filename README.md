@@ -66,6 +66,19 @@ This rule checks if the severity label is equal to "critical" and changes the pr
 
 # API Endpoints
 
-- **/config (GET)**: Retrieve the current configuration in YAML format.
-- **/config (POST)**: Update the configuration with a new one in JSON or YAML format.
-- **/api/v1/alerts (POST)**: Receive incoming Prometheus alerts, apply relabelling rules, and forward them to specified Alertmanager endpoints.
+## /config (GET)
+- **Description:** Retrieve the current configuration in in JSON or YAML format, depends on Content-Type header.
+- **HTTP Method:** GET
+
+## /config (POST)
+- **Description:** Update the configuration with a new one in JSON or YAML format, depends on Content-Type header
+- **HTTP Method:** POST
+
+## /api/v1/alerts (POST)
+- **Description:** Receive incoming Prometheus alerts, apply relabeling rules, and forward them to specified Alertmanager endpoint.
+- **HTTP Method:** POST
+
+## /-/ready and /-/healthy
+- **Description:** These endpoints are used for readiness and health checks.
+- **HTTP Methods:** GET
+- **Response:** It will be forwarded directly to Alertmanager endpoint.
