@@ -8,6 +8,6 @@ YAML_FILE="config.yml"  # Replace with the actual path to your YAML file
 
 # Send the POST request with curl
 curl -v -X POST \
-     -H "Content-Type: application/yaml" \
+     -H "Content-Type: text/yaml" \
      --data-binary "@$YAML_FILE" \
      "$URL"
