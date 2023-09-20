@@ -3,10 +3,6 @@
 Alert Relabeller is a lightweight Go application designed to help you modify and forward Prometheus alerts to various Alertmanager endpoints based on custom-defined rules. This application is especially useful in scenarios where you need to perform alert relabelling and redistribution to different Alertmanager instances.
 
 ```yaml
-alertmanager_urls:
-  - http://alertmanager1:9093/api/v1/alerts
-  - http://alertmanager2:9093/api/v1/alerts
-
 rules:
   - if: "severity == critical"
     then:
@@ -21,8 +17,6 @@ rules:
 You can start Alertmanager Relabeller by running the following command, specifying the path to your configuration file (if different from the default config.yml):
 
 ```yaml
-alertmanager_urls:
-  - http://localhost:9093/api/v1/alerts
 rules:
   - if: name == 'argocd'
     then: 
@@ -38,10 +32,22 @@ rules:
 **alertmanager_urls:** List of Alertmanager endpoints where modified alerts will be sent.
 **rules**: Custom rules for relabelling alerts based on label conditions.
 
-## Example rule:
+## Example run:
+
+### With binary
 
 ```sh
-./alert-relabeller -config /path/to/your/config.yml
+./alert-relabeller -config /path/to/your/config.yml -alertmanager-url localhost:9093 -port 9999
+```
+
+### With Docker
+
+```sh
+docker run -d \
+  -p 9999:9999 \
+  -v /path/to/your/config.yml:/app/config.yml \
+  ghcr.io/alileza/alert-relabeller:v0.1.1 \
+  -config /app/config.yml -alertmanager-url http://alertmanager:9093
 ```
 
 The application will start a web server on port 9999 by default and listen for incoming alerts and configuration updates.

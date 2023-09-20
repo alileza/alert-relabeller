@@ -6,18 +6,24 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/common/model"
-	"gopkg.in/yaml.v2"
 )
 
 func main() {
+	var alertmanagerURL string
 	var configPath string
 	var port string
 	flag.StringVar(&configPath, "config", "config.yml", "destination of config file")
 	flag.StringVar(&port, "port", ":9999", "port to listen on")
+	flag.StringVar(&alertmanagerURL, "alertmanager-url", "http://localhost:9093", "alertmanager url")
 	flag.Parse()
+
+	if !strings.HasSuffix(alertmanagerURL, "/api/v1/alerts") {
+		alertmanagerURL += "/api/v1/alerts"
+	}
 
 	var config Config
 	if err := config.Load(configPath); err != nil {
@@ -26,39 +32,14 @@ func main() {
 	config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
 
 	client := &http.Client{}
-	log.Printf("listening on %s", port)
+	log.Printf("alert-relabelling running on %s", port)
 	err := http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/config" {
-			if err := yaml.NewEncoder(w).Encode(config); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+		if r.URL.Path == "/config" {
+			config.Handler(w, r)
 			return
 		}
 
-		if r.Method == http.MethodPost && r.URL.Path == "/config" {
-			switch r.Header.Get("Content-Type") {
-			case "application/json":
-				if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
-					log.Printf("[ERR] failed to reload config: %s", err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
-			case "application/yaml":
-				if err := yaml.NewDecoder(r.Body).Decode(&config); err != nil {
-					log.Printf("[ERR] failed to reload config: %s", err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
-			default:
-				http.Error(w, "invalid content type", http.StatusBadRequest)
-				return
-			}
-			log.Printf("Successfully reload config")
-			return
-		}
-
+		// alerts handling
 		var incomingAlerts []model.Alert
 		if err := json.NewDecoder(r.Body).Decode(&incomingAlerts); err != nil {
 			log.Printf("[ERR] failed to decode incoming alerts: %s", err)
@@ -77,21 +58,13 @@ func main() {
 			return
 		}
 
-		var errs []error
-		for _, alertmanagerURL := range config.AlertmanagerURLs {
-			resp, err := client.Post(alertmanagerURL, "application/json", bytes.NewBuffer(payload))
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			resp.Body.Close()
-		}
-
-		if len(errs) > 0 {
-			log.Println(printErrs(errs))
-			http.Error(w, printErrs(errs), http.StatusInternalServerError)
+		resp, err := client.Post(alertmanagerURL, "application/json", bytes.NewBuffer(payload))
+		if err != nil {
+			log.Printf("[ERR] failed to post alerts to alertmanager: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		resp.Body.Close()
 	}))
 
 	if err != nil {
