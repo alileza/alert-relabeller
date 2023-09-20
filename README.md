@@ -68,14 +68,14 @@ This rule checks if the severity label is equal to "critical" and changes the pr
 # API Endpoints
 
 ## /config (GET)
-- **Description:** Retrieve the current configuration in in JSON or YAML format, depends on Content-Type header.
+- **Description:** Retrieve the current configuration in in JSON or YAML format, depends on Content-Type header. (application/json OR text/yaml)
 - **HTTP Method:** GET
 
 ## /config (POST)
-- **Description:** Update the configuration with a new one in JSON or YAML format, depends on Content-Type header
+- **Description:** Update the configuration with a new one in JSON or YAML format, depends on Content-Type header. (application/json OR text/yaml)
 - **HTTP Method:** POST
 
-## /api/v1/alerts (POST)
+## /api/v2/alerts (POST)
 - **Description:** Receive incoming Prometheus alerts, apply relabeling rules, and forward them to specified Alertmanager endpoint.
 - **HTTP Method:** POST
 

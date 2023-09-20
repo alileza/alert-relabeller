@@ -52,12 +52,14 @@ func (c *Config) GetHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Header.Get("Content-Type") {
 	case "application/json":
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(c); err != nil {
 			log.Printf("[ERR] failed to encode config (json): %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	default:
-		w.Header().Set("Content-Type", "application/yaml")
+		w.Header().Set("Content-Type", "text/yaml")
+		w.WriteHeader(http.StatusOK)
 		if err := yaml.NewEncoder(w).Encode(c); err != nil {
 			log.Printf("[ERR] failed to encode config (yaml): %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -75,7 +77,7 @@ func (c *Config) PostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		c.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
 		w.WriteHeader(http.StatusOK)
-	case "application/yaml":
+	case "text/yaml":
 		if err := yaml.NewDecoder(r.Body).Decode(&c); err != nil {
 			log.Printf("[ERR] failed to reload config: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -122,6 +124,8 @@ func relabelling(config *Config, alert *model.Alert) {
 		}
 
 		if val, ok := alert.Labels[model.LabelName(keyAndValue[0])]; ok && val == model.LabelValue(keyAndValue[1]) {
+			relabelingMatchesTotal.Inc()
+
 			for key, value := range rule.Then {
 				alert.Labels[model.LabelName(key)] = model.LabelValue(value)
 			}
