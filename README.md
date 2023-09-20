@@ -12,6 +12,11 @@ rules:
       team: dba
 ```
 
+# How it works as Alertmanager sidecar
+
+<img width="1021" alt="Screenshot 2023-09-20 at 03 27 39" src="https://github.com/distrobeat/infrastructure/assets/1962129/ead035e0-d03b-4336-9bc1-9618fb04c741">
+
+
 # Usage
 
 You can start Alertmanager Relabeller by running the following command, specifying the path to your configuration file (if different from the default config.yml):

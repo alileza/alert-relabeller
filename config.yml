@@ -1,5 +1,9 @@
 rules:
   - if: name == 'argocd'
     then: 
-      atom: developer-experience
-      element: platform
+      team: devops
+      department: platform
+  - if: job == 'rds-exporter'
+    then: 
+      team: dba
+      component: aws
