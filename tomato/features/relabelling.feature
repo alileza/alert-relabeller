@@ -1,6 +1,6 @@
 Feature: test alert relabelling behaviour
 
-    Scenario: test update config API
+    Scenario: test get config API
         Given "httpcli" set request header key "Content-Type" with value "application/json"
         Given "httpcli" send request to "GET /config"
         Then "httpcli" response code should be 200
@@ -21,6 +21,40 @@ Feature: test alert relabelling behaviour
                     "then": {
                         "component": "aws",
                         "team": "dba"
+                    }
+                }
+            ],
+            "config_last_updated_at": "*"
+        }
+        """
+
+    Scenario: test update config API
+        Given "httpcli" set request header key "Content-Type" with value "application/json"
+        Given "httpcli" send request to "POST /config" with body
+        """
+        {
+            "rules": [
+                {
+                    "if": "name == 'argocd'",
+                    "then": {
+                        "department": "1232",
+                        "team": "devops"
+                    }
+                }
+            ]
+        }
+        """
+        Then "httpcli" response code should be 200
+        Given "httpcli" send request to "GET /config"
+        And "httpcli" response body should equal
+        """
+        {
+            "rules": [
+                {
+                    "if": "name == 'argocd'",
+                    "then": {
+                        "department": "1232",
+                        "team": "devops"
                     }
                 }
             ],
