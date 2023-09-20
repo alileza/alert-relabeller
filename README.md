@@ -47,7 +47,7 @@ rules:
 docker run -d \
   -p 9999:9999 \
   -v /path/to/your/config.yml:/app/config.yml \
-  ghcr.io/alileza/alert-relabeller:v0.1.1 \
+  ghcr.io/alileza/alert-relabeller:v0.2.0 \
   -config /app/config.yml -alertmanager-url http://alertmanager:9093
 ```
 
