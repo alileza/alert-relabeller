@@ -12,8 +12,15 @@ Feature: test alert relabelling behaviour
                 {
                     "if": "name == 'argocd'",
                     "then": {
-                        "atom": "developer-experience",
-                        "element": "platform"
+                        "department": "platform",
+                        "team": "devops"
+                    }
+                },
+                {
+                    "if": "job == 'rds-exporter'",
+                    "then": {
+                        "component": "aws",
+                        "team": "dba"
                     }
                 }
             ],

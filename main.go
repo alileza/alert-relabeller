@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"io"
 	"log"
 	"net/http"
-	"strings"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -21,9 +23,11 @@ func main() {
 	flag.StringVar(&alertmanagerURL, "alertmanager-url", "http://localhost:9093", "alertmanager url")
 	flag.Parse()
 
-	if !strings.HasSuffix(alertmanagerURL, "/api/v1/alerts") {
-		alertmanagerURL += "/api/v1/alerts"
+	uam, err := url.Parse(alertmanagerURL)
+	if err != nil {
+		log.Fatal(err)
 	}
+	amproxy := httputil.NewSingleHostReverseProxy(uam)
 
 	var config Config
 	if err := config.Load(configPath); err != nil {
@@ -31,11 +35,20 @@ func main() {
 	}
 	config.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
 
-	client := &http.Client{}
 	log.Printf("alert-relabelling running on %s", port)
-	err := http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err = http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/favicon.ico" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		if r.URL.Path == "/config" {
 			config.Handler(w, r)
+			return
+		}
+
+		if r.URL.Path == "/-/ready" || r.URL.Path == "/-/healthy" {
+			amproxy.ServeHTTP(w, r)
 			return
 		}
 
@@ -58,13 +71,9 @@ func main() {
 			return
 		}
 
-		resp, err := client.Post(alertmanagerURL, "application/json", bytes.NewBuffer(payload))
-		if err != nil {
-			log.Printf("[ERR] failed to post alerts to alertmanager: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		resp.Body.Close()
+		r.Body = io.NopCloser(bytes.NewBuffer(payload))
+		r.ContentLength = int64(len(payload))
+		amproxy.ServeHTTP(w, r)
 	}))
 
 	if err != nil {
