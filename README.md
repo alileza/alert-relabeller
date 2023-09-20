@@ -10,7 +10,8 @@ In many cases, organizations share common Prometheus alert rules across their te
 
 # How it works as Alertmanager sidecar
 
-<img width="1021" alt="Screenshot 2023-09-20 at 03 27 39" src="https://github.com/distrobeat/infrastructure/assets/1962129/ead035e0-d03b-4336-9bc1-9618fb04c741">
+<img width="1021" alt="alert-relabeller" src="https://github.com/alileza/alert-relabeller/assets/1962129/45cd08ec-abff-4c2b-81c5-8cb04dd8ba3b">
+
 
 
 # Usage
