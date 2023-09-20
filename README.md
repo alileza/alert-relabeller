@@ -2,6 +2,12 @@
 
 Alert Relabeller is a lightweight Go application designed to help you modify and forward Prometheus alerts to various Alertmanager endpoints based on custom-defined rules. This application is especially useful in scenarios where you need to perform alert relabelling and redistribution to different Alertmanager instances.
 
+It works best as a sidecar to your Alertmanager, would be even nicer if it could be attached as a Prometheus Alertmanager feature 🤞
+
+# Problem statement
+
+In many cases, organizations share common Prometheus alert rules across their teams. However, when multiple teams are involved, routing these shared alerts to the appropriate receivers can be challenging. Ideally, you would configure proper labels in your alerts to ensure they are routed correctly. The issue arises because common alerts cannot have predefined labels since the labels may vary depending on the team responsible for the alert. This is where an alert relabeler becomes invaluable. It allows you to intercept alerts and modify their labels based on the desired configuration, which could be derived from your organization's data or even ArgoCD labels.
+
 # How it works as Alertmanager sidecar
 
 <img width="1021" alt="Screenshot 2023-09-20 at 03 27 39" src="https://github.com/distrobeat/infrastructure/assets/1962129/ead035e0-d03b-4336-9bc1-9618fb04c741">
