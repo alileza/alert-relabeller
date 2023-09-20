@@ -102,6 +102,8 @@ func main() {
 		r.Body = io.NopCloser(bytes.NewBuffer(payload))
 		r.ContentLength = int64(len(payload))
 		amproxy.ServeHTTP(w, r)
+		// This assumption to have status to always be OK is due to, we rely on a ready & healthy endpoint
+		// If the alert manager unavailable, this app would be flag as not-ready anyway, but this logic could still be improved
 		requestsTotal.WithLabelValues(toString(http.StatusOK), r.Method, r.URL.Path).Inc()
 	}))
 
