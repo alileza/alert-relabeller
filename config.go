@@ -51,11 +51,13 @@ func (c *Config) Handler(w http.ResponseWriter, r *http.Request) {
 func (c *Config) GetHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Header.Get("Content-Type") {
 	case "application/json":
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(c); err != nil {
 			log.Printf("[ERR] failed to encode config (json): %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	default:
+		w.Header().Set("Content-Type", "application/yaml")
 		if err := yaml.NewEncoder(w).Encode(c); err != nil {
 			log.Printf("[ERR] failed to encode config (yaml): %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -72,6 +74,7 @@ func (c *Config) PostHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		c.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
+		w.WriteHeader(http.StatusOK)
 	case "application/yaml":
 		if err := yaml.NewDecoder(r.Body).Decode(&c); err != nil {
 			log.Printf("[ERR] failed to reload config: %s", err)
@@ -79,6 +82,7 @@ func (c *Config) PostHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		c.ConfigLastUpdatedAt = time.Now().Format(time.RFC3339)
+		w.WriteHeader(http.StatusOK)
 	default:
 		http.Error(w, "invalid content type", http.StatusBadRequest)
 		return

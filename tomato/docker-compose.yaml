@@ -1,0 +1,32 @@
+version: '3.7'
+services:
+    tomato:
+      image: quay.io/tomatool/tomato:v1.4.2
+      volumes:
+        - ${PWD}/tomato/tomato.yml:/config.yml
+        - ${PWD}/tomato/features/:/features/
+      command: 
+        - /config.yml
+      depends_on:
+        - alert-relabeller
+        - alertmanager
+
+    alert-relabeller:
+        build: ..
+        volumes:
+          - ${PWD}:/app
+        command:
+          - -config=/app/config.yml
+          - -alertmanager-url=http://alertmanager:8080
+        expose:
+          - "9999"
+        depends_on:
+          - alertmanager
+    
+    # this will acting like alertmanager node
+    alertmanager:
+      image: rodolpheche/wiremock
+      ports:
+        - "8080"
+      expose:
+        - "8080"
