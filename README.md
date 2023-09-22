@@ -2,7 +2,7 @@
 
 Alert Relabeller is a lightweight Go application designed to help you modify and forward Prometheus alerts to various Alertmanager endpoints based on custom-defined rules. This application is especially useful in scenarios where you need to perform alert relabelling and redistribution to different Alertmanager instances.
 
-It works best as a sidecar to your Alertmanager, would be even nicer if it could be attached as a Prometheus Alertmanager feature 🤞
+**It works best as a sidecar to your Alertmanager, would be even nicer if it could be attached as a Prometheus Alertmanager feature 🤞** _(or maybe this could easily be replaced by relabeling rules?)_
 
 # Problem statement
 
